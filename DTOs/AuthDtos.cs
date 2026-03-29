@@ -36,4 +36,30 @@ namespace SystemResourceMonitorAPI.DTOs
         [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
         public string Password { get; set; } = string.Empty;
     }
+
+    public class UpdateUsernameDto
+    {
+        [Required]
+        [MinLength(3)]
+        [MaxLength(50)]
+        public string NewUsername { get; set; } = string.Empty;
+    }
+
+    public class UpdateEmailDto
+    {
+        [Required]
+        [EmailAddress]
+        [MaxLength(100)]
+        public string NewEmail { get; set; } = string.Empty;
+    }
+
+    public class UpdatePasswordDto
+    {
+        [Required]
+        public string OldPassword { get; set; } = string.Empty;
+
+        [Required]
+        [MinLength(6)]
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }
