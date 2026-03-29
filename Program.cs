@@ -87,8 +87,8 @@ builder.Services.AddCors(options =>
             "http://localhost:3000",
             "http://localhost:5173",
             "http://localhost:5174",
-            "https://system-monitor-web.vercel.app"
- )
+            "https://system-monitor-web-beta.vercel.app"
+        )
              .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
