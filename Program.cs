@@ -81,12 +81,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:3000",  // React dev server
-                "http://localhost:5173",  // Vite dev server
-                "http://localhost:5174",  // Vite dev server alternative
-                "http://localhost:4200"   // Angular dev server
-            )
-            .AllowAnyHeader()
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "https://system-monitor-web.vercel.app"
+ )
+             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
     });
@@ -162,17 +162,14 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ===== MIDDLEWARE PIPELINE =====
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "System Resource Monitor API v1");
-        options.RoutePrefix = "swagger";
-    });
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "System Resource Monitor API v1");
+    options.RoutePrefix = "swagger";
+});
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // CORS має бути перед Authentication/Authorization
 app.UseCors("AllowFrontend");
