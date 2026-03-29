@@ -155,6 +155,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
         DbInitializer.Initialize(context);
         app.Logger.LogInformation("Database initialized successfully");
     }
