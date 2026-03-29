@@ -43,7 +43,10 @@ builder.Services.AddScoped<IAlertService, AlertsService>();
 builder.Services.AddSingleton<IMetricsHistoryService, MetricsHistoryService>();
 
 // ===== BACKGROUND SERVICE =====
-builder.Services.AddHostedService<MetricsBackgroundService>();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddHostedService<MetricsBackgroundService>();
+}
 
 // ===== SIGNALR (NEW!) =====
 builder.Services.AddSignalR();
