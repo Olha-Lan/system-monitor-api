@@ -24,29 +24,22 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 errorCodesToAdd: null);
         }));
 
-// ===== COLLECTORS REGISTRATION (тільки на Windows/Development) =====
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddScoped<CpuCollector>();
-    builder.Services.AddScoped<RamCollector>();
-    builder.Services.AddScoped<ProcessCollector>();
-    builder.Services.AddScoped<DiskCollector>();
-    builder.Services.AddScoped<NetworkCollector>();
-}
+// ===== COLLECTORS REGISTRATION =====
+builder.Services.AddScoped<CpuCollector>();
+builder.Services.AddScoped<RamCollector>();
+builder.Services.AddScoped<ProcessCollector>();
+builder.Services.AddScoped<DiskCollector>();
+builder.Services.AddScoped<NetworkCollector>();
 
 // ===== SERVICES REGISTRATION =====
 builder.Services.AddScoped<IAuthService, AuthService>();
-
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddScoped<ICpuMonitorService, CpuMonitorService>();
-    builder.Services.AddScoped<IRamMonitorService, RamMonitorService>();
-    builder.Services.AddScoped<IProcessMonitorService, ProcessMonitorService>();
-    builder.Services.AddScoped<IDiskMonitorService, DiskMonitorService>();
-    builder.Services.AddScoped<INetworkMonitorService, NetworkMonitorService>();
-    builder.Services.AddScoped<IAlertService, AlertsService>();
-    builder.Services.AddSingleton<IMetricsHistoryService, MetricsHistoryService>();
-}
+builder.Services.AddScoped<ICpuMonitorService, CpuMonitorService>();
+builder.Services.AddScoped<IRamMonitorService, RamMonitorService>();
+builder.Services.AddScoped<IProcessMonitorService, ProcessMonitorService>();
+builder.Services.AddScoped<IDiskMonitorService, DiskMonitorService>();
+builder.Services.AddScoped<INetworkMonitorService, NetworkMonitorService>();
+builder.Services.AddScoped<IAlertService, AlertsService>();
+builder.Services.AddSingleton<IMetricsHistoryService, MetricsHistoryService>();
 
 // ===== BACKGROUND SERVICE =====
 if (builder.Environment.IsDevelopment())
@@ -179,11 +172,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-if (builder.Environment.IsDevelopment())
-{
-    app.MapHub<MetricsHub>("/hubs/metrics");
-}
+app.MapHub<MetricsHub>("/hubs/metrics");
 
 app.Logger.LogInformation("System Resource Monitor API v2.0 Started");
 
