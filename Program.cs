@@ -10,7 +10,6 @@ using SystemResourceMonitorAPI.Hubs;
 using SystemResourceMonitorAPI.Services;
 using SystemResourceMonitorAPI.Services.Interfaces;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // ===== DATABASE CONFIGURATION =====
@@ -25,22 +24,29 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 errorCodesToAdd: null);
         }));
 
-// ===== COLLECTORS REGISTRATION =====
-builder.Services.AddScoped<CpuCollector>();
-builder.Services.AddScoped<RamCollector>();
-builder.Services.AddScoped<ProcessCollector>();
-builder.Services.AddScoped<DiskCollector>();
-builder.Services.AddScoped<NetworkCollector>();
+// ===== COLLECTORS REGISTRATION (тільки на Windows/Development) =====
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<CpuCollector>();
+    builder.Services.AddScoped<RamCollector>();
+    builder.Services.AddScoped<ProcessCollector>();
+    builder.Services.AddScoped<DiskCollector>();
+    builder.Services.AddScoped<NetworkCollector>();
+}
 
 // ===== SERVICES REGISTRATION =====
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICpuMonitorService, CpuMonitorService>();
-builder.Services.AddScoped<IRamMonitorService, RamMonitorService>();
-builder.Services.AddScoped<IProcessMonitorService, ProcessMonitorService>();
-builder.Services.AddScoped<IDiskMonitorService, DiskMonitorService>();
-builder.Services.AddScoped<INetworkMonitorService, NetworkMonitorService>();
-builder.Services.AddScoped<IAlertService, AlertsService>();
-builder.Services.AddSingleton<IMetricsHistoryService, MetricsHistoryService>();
+
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<ICpuMonitorService, CpuMonitorService>();
+    builder.Services.AddScoped<IRamMonitorService, RamMonitorService>();
+    builder.Services.AddScoped<IProcessMonitorService, ProcessMonitorService>();
+    builder.Services.AddScoped<IDiskMonitorService, DiskMonitorService>();
+    builder.Services.AddScoped<INetworkMonitorService, NetworkMonitorService>();
+    builder.Services.AddScoped<IAlertService, AlertsService>();
+    builder.Services.AddSingleton<IMetricsHistoryService, MetricsHistoryService>();
+}
 
 // ===== BACKGROUND SERVICE =====
 if (builder.Environment.IsDevelopment())
@@ -48,12 +54,12 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddHostedService<MetricsBackgroundService>();
 }
 
-// ===== SIGNALR (NEW!) =====
+// ===== SIGNALR =====
 builder.Services.AddSignalR();
 
 // ===== JWT AUTHENTICATION =====
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] 
+var secretKey = jwtSettings["SecretKey"]
     ?? throw new InvalidOperationException("JWT SecretKey is not configured in appsettings.json");
 
 builder.Services.AddAuthentication(options =>
@@ -72,7 +78,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"] ?? "SystemResourceMonitorAPI",
         ValidAudience = jwtSettings["Audience"] ?? "SystemResourceMonitorClient",
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew = TimeSpan.Zero // Видаляємо затримку валідації токена
+        ClockSkew = TimeSpan.Zero
     };
 });
 
@@ -89,14 +95,13 @@ builder.Services.AddCors(options =>
             "http://localhost:5174",
             "https://system-monitor-web-beta.vercel.app"
         )
-             .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
 // ===== CONTROLLERS + SWAGGER =====
-builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -105,7 +110,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "System Resource Monitor API",
         Version = "v1.0",
-        Description = "API для моніторингу системних ресурсів (CPU, RAM, Disk, Network, Processes)",
+        Description = "API для моніторингу системних ресурсів",
         Contact = new OpenApiContact
         {
             Name = "System Monitor",
@@ -113,12 +118,9 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
-    // JWT Authentication для Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. \n\n" +
-                      "Enter 'Bearer' [space] and then your token in the text input below.\n\n" +
-                      "Example: 'Bearer 12345abcdef'",
+        Description = "JWT Authorization. Enter 'Bearer' [space] and your token.",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -141,7 +143,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// ===== LOGGING CONFIGURATION =====
+// ===== LOGGING =====
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
@@ -165,7 +167,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ===== MIDDLEWARE PIPELINE =====
+// ===== MIDDLEWARE =====
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
@@ -173,27 +175,16 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger";
 });
 
-//app.UseHttpsRedirection();
-
-// CORS має бути перед Authentication/Authorization
 app.UseCors("AllowFrontend");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
-// ===== SIGNALR HUB MAPPING (NEW!) =====
-app.MapHub<MetricsHub>("/hubs/metrics");
+if (builder.Environment.IsDevelopment())
+{
+    app.MapHub<MetricsHub>("/hubs/metrics");
+}
 
-// ===== STARTUP MESSAGE =====
-app.Logger.LogInformation("===========================================");
 app.Logger.LogInformation("System Resource Monitor API v2.0 Started");
-app.Logger.LogInformation("Swagger UI: https://localhost:7083/swagger");
-app.Logger.LogInformation("SignalR Hub: https://localhost:7083/hubs/metrics");
-app.Logger.LogInformation("Default Users:");
-app.Logger.LogInformation("  Admin: admin / Admin123!");
-app.Logger.LogInformation("  User:  user / User123!");
-app.Logger.LogInformation("===========================================");
 
 app.Run();
